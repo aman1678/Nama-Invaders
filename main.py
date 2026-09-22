@@ -41,8 +41,8 @@ class Alien():
     """Hanldes enemy interactions: motion, shooting, taking
     damage, etc."""
 
-    def __init__(self, screen, health, vert):
-        self.health = health
+    def __init__(self, screen, vert):
+        self.health = 50
         self.screen = screen
         self.vert = vert
         self.pos = pg.Vector2(self.screen.get_width() * 0.5, 
@@ -81,7 +81,7 @@ def main():
 
 
     for i in range(3):
-        aliens.append(Alien(screen,0, i + 1))
+        aliens.append(Alien(screen, i + 1))
 
     # Game's main loop
     while running:
@@ -95,7 +95,8 @@ def main():
         pg.draw.rect(screen, player.color, player.rect, 40)
 
         for alien in aliens:
-            pg.draw.rect(screen, "white", alien.rect, 40)
+            if alien.health > 0:
+                pg.draw.rect(screen, "white", alien.rect, 40)
 
         # Player motion 
         if keys[pg.K_w]:
@@ -135,6 +136,7 @@ def main():
                 shoot = False
                 bullet.pos.x = player.pos.x + 50
                 bullet.pos.y = player.pos.y - 15
+                alien.health -= 10
                 score += 10
                 
 
