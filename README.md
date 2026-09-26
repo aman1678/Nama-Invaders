@@ -1,6 +1,6 @@
 # Nama Invaders
 
-The famous retro game Space Invaders with my own twist.
+A simplfied version of the famous retro game Space Invaders with my own twist.
 
 ## Controls
 
@@ -10,7 +10,7 @@ The famous retro game Space Invaders with my own twist.
 ## How To Win
 
 - Defeat all enemies
-- Watch out for enemy attacks
+- Survive
 - Each enemy grants 10 point
 
 ---
