@@ -19,12 +19,14 @@ class Player():
 
     def __init__(self, screen, color):
         self.color = color
+        self.health = 50
         self.pos = pg.Vector2(screen.get_width() * 0.5, 
                               screen.get_height() * 0.75)
         self.rect = pg.rect.Rect(self.pos.x, self.pos.y, 100, 30)
+        self.bullet = Bullet(self.pos)
 
-    def collision(self, enemy_bullet):
-        return pg.Rect.collidepoint(enemy_bullet)
+    def collision(self, bul):
+        return pg.Rect.collidepoint(self.rect, bul)
 
     def motion(self, vel, dt, dir):
         dx, dy = 0, 0
@@ -34,7 +36,6 @@ class Player():
         elif dir == "y":
             dy = vel * dt
             self.pos.y += dy
-
         pg.Rect.move_ip(self.rect, dx, dy)
 
 class Alien():
@@ -49,6 +50,9 @@ class Alien():
                               self.screen.get_height() * 0.1 + 50 * vert)
         self.rect = pg.rect.Rect(self.pos.x, self.pos.y, 100, 30)
 
+    def collision(self, bul):
+        return pg.Rect.collidepoint(self.rect, bul)
+    
     def motion(self, v, dt, dir):
         dx = 0
 
@@ -72,13 +76,10 @@ def main():
     dt = 0
     shoot = False  
     player = Player(screen, "white")
-    bullet = Bullet()
     aliens = []
     alien_dir = [1] * 3
     score = 0
     font = pg.font.Font(None, 36)
-
-
 
     for i in range(3):
         aliens.append(Alien(screen, i + 1))
@@ -96,7 +97,7 @@ def main():
 
         for alien in aliens:
             if alien.health > 0:
-                pg.draw.rect(screen, "white", alien.rect, 40)
+                pg.draw.rect(screen, "red", alien.rect, 40)
 
         # Player motion 
         if keys[pg.K_w]:
@@ -110,15 +111,18 @@ def main():
 
         # Bullet shooting
         if keys[pg.K_SPACE]:
-            bullet = Bullet(player.pos)
-            bullet.pos.x = player.pos.x + 50
-            bullet.pos.y = player.pos.y - 15
             shoot = True
+            player.bullet.pos.x = player.pos.x + 50
+            player.bullet.pos.y = player.pos.y + 15
 
         # Bullet motion
         if shoot:
-            pg.draw.circle(screen, "white", bullet.pos, 20)
-            bullet.update(1000, dt)
+            pg.draw.circle(screen, "white", player.bullet.pos, 20)
+            player.bullet.update(1000, dt)
+
+        # Bullet goes offscreen
+        if player.bullet.pos.y < 0:
+            shoot = False
 
         # Motion for each alien
         for i, alien in enumerate(aliens):
@@ -127,19 +131,13 @@ def main():
             elif alien.pos.x <= 0:
                 alien_dir[i] = 1
             alien.motion(300, dt, alien_dir[i])
-            x_col = (bullet.pos.x >= alien.pos.x
-                    and bullet.pos.x <= alien.pos.x + 100)
-            y_col = (bullet.pos.y >= alien.pos.y
-                     and bullet.pos.y <= alien.pos.y + 30)
 
-            if x_col and y_col:
+            if alien.health and alien.collision(player.bullet.pos) and shoot:
                 shoot = False
-                bullet.pos.x = player.pos.x + 50
-                bullet.pos.y = player.pos.y - 15
                 alien.health -= 10
                 score += 10
                 
-
+        # Score 
         score_surface = font.render(f"Score {score}", True, "white")
         score_rect = score_surface.get_rect()
         score_rect.topleft = (10, 10)
