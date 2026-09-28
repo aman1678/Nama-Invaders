@@ -17,7 +17,6 @@ class Player():
 
     def __init__(self, screen, color):
         self.color = color
-        self.health = 50
         self.pos = pg.Vector2(screen.get_width() * 0.5, 
                               screen.get_height() * 0.75)
         self.rect = pg.rect.Rect(self.pos.x, self.pos.y, 100, 30)
@@ -47,13 +46,13 @@ class Alien():
         self.pos = pg.Vector2(self.screen.get_width() * 0.5, 
                               self.screen.get_height() * 0.1 + 50 * vert)
         self.rect = pg.rect.Rect(self.pos.x, self.pos.y, 100, 30)
+        self.bullet = Bullet(self.pos)
 
     def collision(self, bul):
         return pg.Rect.collidepoint(self.rect, bul)
     
     def motion(self, v, dt, dir):
         dx = 0
-
         if dir == 1:
             dx = v * dt
         elif dir == 0:
@@ -61,35 +60,52 @@ class Alien():
         self.pos.x += dx * self.vert / 2
         pg.Rect.move_ip(self.rect, dx * self.vert / 2, 0)
 
-def display_score(score, font, screen, color, loc):
-            
-            score_surface = font.render(f"Score: {score}", True, color)
-            score_rect = score_surface.get_rect()
-            if loc == "tl":
-                score_rect.topleft = (10, 10)
-            screen.blit(score_surface, score_rect)
-        
-# Game's main function
-def main():
+# ------- Function to display message on screen where we please ----------
+def display_message(message, font, screen, color, pos, zone):
+            message_surface = font.render(message, True, color)
+            message_rect = message_surface.get_rect()
 
+            if zone == "tl":
+                message_rect.topleft = pos
+            elif zone == "c":
+                message_rect.center = pos
+            screen.blit(message_surface, message_rect)
+
+# --------- MAIN FUNC -------------
+def main():
     # Setup
     alien_count = int(input("How many aliens would you like to destroy?: "))
 
+    # Variables needed for Pygame
     pg.init()
     screen = pg.display.set_mode((1280, 720))
     pg.display.set_caption("Nama Invaders!")
-    clock = pg.time.Clock()
     running = True
+    font = pg.font.Font(None, 36)
     dt = 0
+
+    # Variables for player
     shoot = False  
     player = Player(screen, "white")
     score = 0
-    font = pg.font.Font(None, 36)
+
+    # Variables for computing time elapsed
+    clock = pg.time.Clock()
+    start_time = pg.time.get_ticks()
+    time_limit = alien_count
+
+    # Variables and setup for aliens
     aliens = []
     alien_dir = [1] * alien_count
     dead = 0
+    used = set()
     for i in range(alien_count):
-        aliens.append(Alien(screen, i + 1))
+        v_mul = random.randint(1, 5)
+        while v_mul in used:
+            v_mul = random.randint(1, 5)
+        aliens.append(Alien(screen, v_mul))
+        time_limit += v_mul * 5 
+        used.add(v_mul)
 
     # Game's main loop
     while running:
@@ -101,13 +117,20 @@ def main():
         screen.fill("black")
         keys = pg.key.get_pressed()
         pg.draw.rect(screen, player.color, player.rect, 40)
+        elapsed_seconds = (pg.time.get_ticks() - start_time) // 1000
+        remaining_time = max(0, time_limit - elapsed_seconds)
 
-        # If all aliens dead = win, else regular game logic
+        # If all aliens dead -> win, time = 0 -> lose, else regular game logic
         if dead == alien_count:
-            win_text = font.render(f"You Win!!", True, (0, 255, 0))
-            win_rect = win_text.get_rect()
-            win_rect.center = (screen.get_width() / 2, screen.get_height() / 2)
-            screen.blit(win_text, win_rect)
+            display_message("You Win!!", font, screen, (0, 255, 0), 
+                            (screen.get_width() / 2, screen.get_height() / 2), "c")
+            display_message(f"Score: {score}", font, screen, (0, 255, 0),
+                            (screen.get_width() / 2, screen.get_height() / 2 + 40), "c")
+        elif remaining_time == 0:
+            display_message("You Lose :(", font, screen, (255, 0, 0), 
+                            (screen.get_width() / 2, screen.get_height() / 2), "c")
+            display_message(f"Score: {score}", font, screen, (255, 0, 0),
+                            (screen.get_width() / 2, screen.get_height() / 2 + 40), "c")
         else:
             for alien in aliens:
                 if alien.health > 0:
@@ -155,15 +178,15 @@ def main():
                     if alien.health == 0:
                         dead += 1
 
-            # Player health display
-            health_surface = font.render(f"Health: {player.health}", True, "white")
-            health_rect = health_surface.get_rect()
-            health_rect.topleft = (10, 30)
-            screen.blit(health_surface, health_rect)
+
+            # Time left display
+            display_message(f"Time left: {remaining_time}s", font, screen,
+                            (255, 255, 255), (10, 40), "tl")
 
             # Score display
-            display_score(score, font, screen, (255, 255, 255))
-            
+            display_message(f"Score: {score}", font, screen, 
+                            (255, 255, 255), (10, 10), "tl")
+        
         pg.display.flip()
         dt = clock.tick(60) / 1000
 
