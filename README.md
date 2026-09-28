@@ -18,4 +18,4 @@ Alien invaders are trying to breach into my station! It is up to you to destroy 
 
 ## Developer's Note
 
-This is my first ever basic game built with the Pygame module. Therefore it is pretty basic. Also I opted out of using sprites and wanted to attempt to create this game without them. I instead used the draw module in Pygame. 
+This is my first ever game built with the Pygame module. Therefore it is pretty basic. Also I opted out of using sprites and wanted to attempt to create this game without them. I instead used the draw module in Pygame. 
