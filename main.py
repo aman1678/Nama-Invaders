@@ -13,8 +13,7 @@ class Bullet():
         self.pos.y -= vel * dt
 
 class Player():
-    """Handles the player interactions such as shooting, taking
-    damage, moving around, etc."""
+    """Handles the player interactions: shooting and moving around"""
 
     def __init__(self, screen, color):
         self.color = color
@@ -37,8 +36,7 @@ class Player():
         pg.Rect.move_ip(self.rect, dx, dy)
 
 class Alien():
-    """Hanldes enemy interactions: motion, shooting, taking
-    damage, etc."""
+    """Hanldes enemy interactions: moving and taking damage"""
 
     def __init__(self, screen, vert):
         self.health = 50
@@ -75,7 +73,6 @@ def display_message(message, font, screen, color, pos, zone):
 def main():
     # Setup
     alien_count = int(input("How many aliens would you like to destroy?: "))
-
     while alien_count > 5 or alien_count <= 0:
         alien_count = int(input("Please choose a number between 1 and 5: "))
 
