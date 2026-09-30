@@ -7,6 +7,7 @@ class Bullet():
 
     def __init__(self, pos=None):
         self.pos = pg.Vector2(pos) if pos else pg.Vector2(0,0)
+        self.shoot = False
 
     def update(self, vel, dt):
         self.pos.y -= vel * dt
@@ -20,7 +21,7 @@ class Player():
         self.pos = pg.Vector2(screen.get_width() * 0.5, 
                               screen.get_height() * 0.75)
         self.rect = pg.rect.Rect(self.pos.x, self.pos.y, 100, 30)
-        self.bullet = Bullet(self.pos)
+        self.bullets = []
 
     def collision(self, bul):
         return pg.Rect.collidepoint(self.rect, bul)
@@ -46,7 +47,6 @@ class Alien():
         self.pos = pg.Vector2(self.screen.get_width() * 0.5, 
                               self.screen.get_height() * 0.1 + 50 * vert)
         self.rect = pg.rect.Rect(self.pos.x, self.pos.y, 100, 30)
-        self.bullet = Bullet(self.pos)
 
     def collision(self, bul):
         return pg.Rect.collidepoint(self.rect, bul)
@@ -76,6 +76,9 @@ def main():
     # Setup
     alien_count = int(input("How many aliens would you like to destroy?: "))
 
+    while alien_count > 5 or alien_count <= 0:
+        alien_count = int(input("Please choose a number between 1 and 5: "))
+
     # Variables needed for Pygame
     pg.init()
     screen = pg.display.set_mode((1280, 720))
@@ -85,7 +88,8 @@ def main():
     dt = 0
 
     # Variables for player
-    shoot = False  
+    shoot_cd = 500
+    last_shot_time = 0  
     player = Player(screen, "white")
     score = 0
 
@@ -93,6 +97,7 @@ def main():
     clock = pg.time.Clock()
     start_time = pg.time.get_ticks()
     time_limit = alien_count
+    prev = 0
 
     # Variables and setup for aliens
     aliens = []
@@ -124,7 +129,7 @@ def main():
         if dead == alien_count:
             display_message("You Win!!", font, screen, (0, 255, 0), 
                             (screen.get_width() / 2, screen.get_height() / 2), "c")
-            display_message(f"Score: {score}", font, screen, (0, 255, 0),
+            display_message(f"Score: {score + 10 * (2**(prev // 10))}", font, screen, (0, 255, 0),
                             (screen.get_width() / 2, screen.get_height() / 2 + 40), "c")
         elif remaining_time == 0:
             display_message("You Lose :(", font, screen, (255, 0, 0), 
@@ -136,7 +141,7 @@ def main():
                 if alien.health > 0:
                     pg.draw.rect(screen, "red", alien.rect, 40)
                 
-                
+            prev = remaining_time
             # Player motion 
             if keys[pg.K_w]:
                 player.motion(-300, dt, "y")
@@ -149,18 +154,18 @@ def main():
 
             # Bullet shooting
             if keys[pg.K_SPACE]:
-                shoot = True
-                player.bullet.pos.x = player.pos.x + 50
-                player.bullet.pos.y = player.pos.y + 15
+                if pg.time.get_ticks() - last_shot_time >= shoot_cd:
+                    player.bullets.append(Bullet(player.pos))
+                    player.bullets[-1].shoot = True
+                    player.bullets[-1].pos.x = player.pos.x + 50
+                    player.bullets[-1].pos.y = player.pos.y + 15
+                    last_shot_time = pg.time.get_ticks()
 
             # Bullet motion
-            if shoot:
-                pg.draw.circle(screen, "white", player.bullet.pos, 20)
-                player.bullet.update(1000, dt)
-
-            # Bullet goes offscreen
-            if player.bullet.pos.y < 0:
-                shoot = False
+            for bullet in player.bullets:
+                if bullet.shoot:
+                    pg.draw.circle(screen, "white", bullet.pos, 20)
+                    bullet.update(1000, dt)
 
             # Motion for each alien
             for i, alien in enumerate(aliens):
@@ -171,21 +176,25 @@ def main():
                 alien.motion(300, dt, alien_dir[i])
 
                 # Alien being hit update
-                if alien.health and alien.collision(player.bullet.pos) and shoot:
-                    shoot = False
-                    alien.health -= 10
-                    score += 10
-                    if alien.health == 0:
-                        dead += 1
-
-
-            # Time left display
-            display_message(f"Time left: {remaining_time}s", font, screen,
-                            (255, 255, 255), (10, 40), "tl")
+                for bullet in player.bullets:
+                    if alien.health and alien.collision(bullet.pos) and bullet.shoot:
+                        bullet.shoot = False
+                        alien.health -= 10
+                        score += 10
+                        if alien.health == 0:
+                            dead += 1
 
             # Score display
             display_message(f"Score: {score}", font, screen, 
                             (255, 255, 255), (10, 10), "tl")
+        
+            # Time left display
+            display_message(f"Time left: {remaining_time}s", font, screen,
+                            (255, 255, 255), (10, 40), "tl")
+
+            # Shots fired display
+            display_message(f"Shots fired: {len(player.bullets)}", font, screen,
+                            (255, 255, 255), (10, 70), "tl")
         
         pg.display.flip()
         dt = clock.tick(60) / 1000
